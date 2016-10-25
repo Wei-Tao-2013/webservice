@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans:beans xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx" 
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+	<mvc:annotation-driven />
+	<tx:annotation-driven /> 
+	
+	
+	<context:spring-configured />
+	<!-- Enables the Spring MVC @Controller programming model -->
+	<context:annotation-config />
+	<context:component-scan base-package="com.iselect.gigyaService" />	   
+		
+	
+		
+	<!-- Handles HTTP GET requests for /resources/** by efficiently serving up static resources in the ${webappRoot}/resources directory -->
+	<mvc:resources mapping="/resources/**" location="/resources/" />
+
+
+	<!-- Resolves views selected for rendering by @Controllers to .jsp resources in the /WEB-INF/views directory -->
+	<beans:bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+	  <beans:property name="viewClass"
+            value="org.springframework.web.servlet.view.JstlView" />
+		<beans:property name="prefix" value="/WEB-INF/views/" />
+		<beans:property name="suffix" value=".jsp" />
+	</beans:bean>
+	
+	
+	<!--  context:property-placeholder
+		location="file:/gigyaService/db.properties" /-->
+		
+
+	<beans:bean class="org.jasypt.spring3.properties.EncryptablePropertyPlaceholderConfigurer">
+	   <beans:constructor-arg ref="configurationEncryptor" />
+	   <beans:property name="ignoreResourceNotFound" value="true"/>
+	   <beans:property name="ignoreUnresolvablePlaceholders" value="true" />
+	   <beans:property name="locations">
+	     <beans:list>
+	        <beans:value>file:/Users/weitao/Documents/GigyaService/dbSQL.properties</beans:value>			
+	     </beans:list>
+	   </beans:property>   
+	 </beans:bean>
+	 
+	  <beans:bean id="environmentVariablesConfiguration" class="org.jasypt.encryption.pbe.config.EnvironmentStringPBEConfig">
+	   <beans:property name="algorithm" value="PBEWithMD5AndDES" />
+	   <beans:property name="passwordEnvName" value="APP_ENCRYPTION_PASSWORD" />
+	 </beans:bean>
+	
+	 <beans:bean id="configurationEncryptor" class="org.jasypt.encryption.pbe.StandardPBEStringEncryptor">
+	   <beans:property name="config" ref="environmentVariablesConfiguration" />
+	 </beans:bean>
+	 
+	<beans:bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">        
+        <beans:property name="driverClass"><beans:value>${database.driverClassName}</beans:value></beans:property>
+        <beans:property name="jdbcUrl"><beans:value>${database.url}</beans:value></beans:property>
+        <beans:property name="user"><beans:value>${database.username}</beans:value></beans:property>
+        <beans:property name="password"><beans:value>${database.password}</beans:value></beans:property>
+        <beans:property name="autoCommitOnClose" value="false"/>
+        <beans:property name="initialPoolSize"><beans:value>3</beans:value></beans:property>
+        <beans:property name="minPoolSize"><beans:value>3</beans:value></beans:property>
+        <beans:property name="maxPoolSize"><beans:value>50</beans:value></beans:property>
+        <beans:property name="idleConnectionTestPeriod"><beans:value>200</beans:value></beans:property>
+        <beans:property name="acquireIncrement"><beans:value>1</beans:value></beans:property>
+        <beans:property name="numHelperThreads"><beans:value>3</beans:value></beans:property>  
+        <!-- acquireRetryAttempts  acquireRetryDelay -->   
+      </beans:bean>
+ 
+  <!--  <beans:bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+        <beans:property name="driverClassName" value="${database.driverClassName}"/>
+        <beans:property name="url" value="${database.url}"/>
+        <beans:property name="username" value="${database.username}"/>
+        <beans:property name="password" value="${database.password}"/>
+        <beans:property name="maxActive" value="20"/>
+        <beans:property name="maxIdle" value="10"/>
+        <beans:property name="maxWait" value="-1"/>
+        <beans:property name="minIdle" value="0"/>
+        <beans:property name="validationQuery" value="SELECT 1 FROM DUAL" />
+    </beans:bean>-->
+    
+    <tx:annotation-driven mode="aspectj"
+		transaction-manager="transactionManager" />
+		
+	<beans:bean id="entityManagerFactory"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<beans:property name="dataSource" ref="dataSource" />
+		<beans:property name="persistenceUnitName" value="hbtOracle" />
+		<beans:property name="persistenceXmlLocation" value="classpath:/META-INF/persistence.xml" />
+	</beans:bean>
+	
+	<beans:bean class="org.springframework.orm.jpa.JpaTransactionManager"
+		id="transactionManager">
+		<beans:property name="entityManagerFactory" ref="entityManagerFactory" />
+	</beans:bean>
+	
+	<beans:bean id="jsonMessageConverter" class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+           <beans:property name="prefixJson" value="true"/>
+           <beans:property name="supportedMediaTypes" value="application/json"/>
+           <beans:property name="objectMapper">
+               <beans:bean class="com.fasterxml.jackson.databind.ObjectMapper">
+                   <beans:property name="serializationInclusion" value="NON_NULL"/>
+               </beans:bean>
+           </beans:property>
+       </beans:bean>        
+	
+</beans:beans>
+
